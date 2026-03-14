@@ -50,19 +50,26 @@ CourseEnrollment/
 ### Prerequisites
 - .NET 9.0 SDK
 
-### Running the Application
+### Option 1: Visual Studio 2022 (Recommended)
+1. Open `CourseEnrollment.sln` in Visual Studio
+2. Right-click the Solution → **Properties** → **Startup Project**
+3. Select **Multiple startup projects**
+4. Set both `CourseEnrollment.API` and `CourseEnrollment.Client` to **Start**
+5. Press **F5** to run
+
+### Option 2: Terminal
 
 **Terminal 1 - Start the API:**
 ```bash
 cd CourseEnrollment/API
-dotnet run
+dotnet run --launch-profile https
 ```
 API runs at: `https://localhost:7000`
 
 **Terminal 2 - Start the Client:**
 ```bash
 cd CourseEnrollment/Client
-dotnet run
+dotnet run --launch-profile https
 ```
 Client runs at: `https://localhost:7001`
 
