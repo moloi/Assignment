@@ -1,0 +1,143 @@
+@page "/available-courses"
+@using CourseEnrollment.Shared.DTOs
+@using CourseEnrollment.Client.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ICourseService CourseService
+
+<PageTitle>Available Courses - Course Enrollment System</PageTitle>
+
+<div class="container mt-4 fade-in">
+    <!-- Header Section -->
+    <div class="text-center mb-5">
+        <h1 class="display-5 mb-3">
+            <i class="bi bi-book-fill text-gradient"></i> Available Courses
+        </h1>
+        <p class="lead text-muted">
+            Discover and enroll in courses that match your interests and career goals
+        </p>
+    </div>
+    
+    @if (isLoading)
+    {
+        <div class="text-center mt-5 py-5">
+            <div class="spinner-border" style="width: 4rem; height: 4rem; border-width: 0.4rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4 class="mt-4 text-muted">Loading available courses...</h4>
+        </div>
+    }
+    else if (!courses.Any())
+    {
+        <div class="card text-center py-5">
+            <div class="card-body">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #6b7280;"></i>
+                <h3 class="mt-4 mb-3">No Available Courses</h3>
+                <p class="text-muted mb-4">
+                    You may already be enrolled in all available courses.
+                </p>
+                <a href="/my-courses" class="btn btn-primary">
+                    <i class="bi bi-journal-check me-2"></i>View My Courses
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var course in courses)
+            {
+                var capacityPercentage = course.MaxStudents > 0 ? (course.EnrolledStudents * 100.0 / course.MaxStudents) : 0;
+                var isFull = course.EnrolledStudents >= course.MaxStudents;
+                
+                <div class="col-lg-6 col-xl-4">
+                    <div class="course-card">
+                        <!-- Course Code Badge -->
+                        <div class="course-code">@course.Code</div>
+                        
+                        <!-- Course Title -->
+                        <h3 class="course-title">
+                            <i class="bi bi-mortarboard-fill me-2" style="color: #6366f1;"></i>@course.Name
+                        </h3>
+                        
+                        <!-- Course Description -->
+                        <p class="course-description">@course.Description</p>
+                        
+                        <!-- Course Meta Information -->
+                        <div class="course-meta">
+                            <div class="course-meta-item">
+                                <i class="bi bi-award-fill" style="color: #f59e0b;"></i>
+                                <span><strong>@course.Credits</strong> Credits</span>
+                            </div>
+                            <div class="course-meta-item">
+                                <i class="bi bi-people-fill" style="color: #6366f1;"></i>
+                                <span><strong>@course.EnrolledStudents</strong> / @course.MaxStudents Students</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Capacity Indicator -->
+                        <div class="capacity-indicator">
+                            <div class="capacity-bar">
+                                <div class="capacity-fill @(isFull ? "full" : "")" style="width: @(capacityPercentage)%"></div>
+                            </div>
+                            <span class="text-muted" style="font-size: 0.85rem;">@capacityPercentage.ToString("F0")% Full</span>
+                        </div>
+                        
+                        <!-- Enroll Button -->
+                        @if (isFull)
+                        {
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="bi bi-x-circle me-2"></i>Course Full
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success w-100" @onclick="() => Enroll(course.Id)">
+                                <i class="bi bi-plus-circle-fill me-2"></i>Enroll Now
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-success mt-4 fade-in" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@message
+        </div>
+    }
+</div>
+
+@code {
+    private List<CourseDto> courses = new();
+    private bool isLoading = true;
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourses();
+    }
+
+    private async Task LoadCourses()
+    {
+        isLoading = true;
+        courses = await CourseService.GetAvailableCourses();
+        isLoading = false;
+    }
+
+    private async Task Enroll(int courseId)
+    {
+        var success = await CourseService.EnrollInCourse(courseId);
+        if (success)
+        {
+            message = "Successfully enrolled in the course! Check 'My Courses' to see your enrollment.";
+            await LoadCourses();
+            StateHasChanged();
+            await Task.Delay(5000);
+            message = string.Empty;
+            StateHasChanged();
+        }
+    }
+}

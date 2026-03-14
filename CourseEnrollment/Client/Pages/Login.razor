@@ -1,0 +1,105 @@
+@page "/login"
+@using CourseEnrollment.Shared.DTOs
+@using CourseEnrollment.Client.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Login - Course Enrollment System</PageTitle>
+
+<div class="container mt-5 fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-xl">
+                <div class="card-header text-center">
+                    <i class="bi bi-box-arrow-in-right" style="font-size: 2.5rem;"></i>
+                    <h3 class="mt-2 mb-0" style="color: white;">Welcome Back</h3>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Login to continue your learning journey</p>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                        </div>
+                    }
+                    
+                    <EditForm Model="loginDto" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-envelope-fill me-2"></i>Email Address
+                            </label>
+                            <InputText @bind-Value="loginDto.Email" class="form-control" type="email" placeholder="Enter your email" />
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-lock-fill me-2"></i>Password
+                            </label>
+                            <InputText @bind-Value="loginDto.Password" class="form-control" type="password" placeholder="Enter your password" />
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Logging in...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                <span>Login</span>
+                            }
+                        </button>
+                    </EditForm>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted mb-2">Don't have an account?</p>
+                        <a href="/register" class="btn btn-outline-success">
+                            <i class="bi bi-person-plus-fill me-2"></i>Create Account
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Info Card -->
+            <div class="card mt-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-body text-center">
+                    <i class="bi bi-info-circle-fill" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2" style="color: white;">New to our platform?</h5>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.9);">Create an account to access our extensive course catalog and start learning today!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginDto loginDto = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        var result = await AuthService.Login(loginDto);
+
+        if (result != null)
+        {
+            var authProvider = (CustomAuthStateProvider)AuthStateProvider;
+            await authProvider.NotifyUserAuthentication(result.Token);
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Invalid email or password. Please try again.";
+        }
+
+        isLoading = false;
+    }
+}

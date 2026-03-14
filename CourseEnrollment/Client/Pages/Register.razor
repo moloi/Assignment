@@ -1,0 +1,128 @@
+@page "/register"
+@using CourseEnrollment.Shared.DTOs
+@using CourseEnrollment.Client.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Register - Course Enrollment System</PageTitle>
+
+<div class="container mt-5 fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-xl">
+                <div class="card-header text-center">
+                    <i class="bi bi-person-plus-fill" style="font-size: 2.5rem;"></i>
+                    <h3 class="mt-2 mb-0" style="color: white;">Create Account</h3>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Join thousands of students learning with us</p>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                        </div>
+                    }
+                    
+                    <EditForm Model="registerDto" OnValidSubmit="HandleRegister">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-person-fill me-2"></i>First Name
+                                </label>
+                                <InputText @bind-Value="registerDto.FirstName" class="form-control" placeholder="John" />
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-person-fill me-2"></i>Last Name
+                                </label>
+                                <InputText @bind-Value="registerDto.LastName" class="form-control" placeholder="Doe" />
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-envelope-fill me-2"></i>Email Address
+                            </label>
+                            <InputText @bind-Value="registerDto.Email" class="form-control" type="email" placeholder="john.doe@example.com" />
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-lock-fill me-2"></i>Password
+                            </label>
+                            <InputText @bind-Value="registerDto.Password" class="form-control" type="password" placeholder="Minimum 6 characters" />
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Must be at least 6 characters with 1 digit
+                            </small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100 mb-3" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Creating Account...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-person-plus-fill me-2"></i>
+                                <span>Create Account</span>
+                            }
+                        </button>
+                    </EditForm>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted mb-2">Already have an account?</p>
+                        <a href="/login" class="btn btn-outline-primary">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Login Here
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Benefits Card -->
+            <div class="card mt-4" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <div class="card-body">
+                    <h5 style="color: white;"><i class="bi bi-check-circle-fill me-2"></i>Why Register?</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-arrow-right-circle-fill me-2"></i>Access to 5+ quality courses</li>
+                        <li class="mb-2"><i class="bi bi-arrow-right-circle-fill me-2"></i>Track your learning progress</li>
+                        <li class="mb-2"><i class="bi bi-arrow-right-circle-fill me-2"></i>Earn certificates</li>
+                        <li><i class="bi bi-arrow-right-circle-fill me-2"></i>Join a community of learners</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterDto registerDto = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        var result = await AuthService.Register(registerDto);
+
+        if (result != null)
+        {
+            var authProvider = (CustomAuthStateProvider)AuthStateProvider;
+            await authProvider.NotifyUserAuthentication(result.Token);
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Registration failed. Please check your information and try again.";
+        }
+
+        isLoading = false;
+    }
+}
